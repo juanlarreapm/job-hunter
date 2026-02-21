@@ -1,0 +1,25 @@
+# Environment
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Data (resume, preferences, DB — personal info)
+data/
+
+# Generated files
+output/
+*.docx
+
+# Node
+node_modules/
+.next/
+frontend/.next/
+frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code local settings
+.claude/
