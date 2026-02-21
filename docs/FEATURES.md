@@ -30,7 +30,20 @@ Improve how jobs are displayed on the main dashboard.
 
 ---
 
-## 4. Settings Page
+## 4. Manual Job Entry (Paste JD or URL)
+Add a job manually — paste in a raw job description or enter a URL — and trigger the full tailoring pipeline from the UI without waiting for the discovery agent to find it.
+
+- Input form with two modes:
+  - **Paste mode** — textarea to paste raw JD text directly
+  - **URL mode** — URL field that scrapes the job posting (title, company, description) on submit
+- On submit, save the job to the DB (status: `new`) and immediately kick off resume tailoring
+- Resulting tailored resume and cover letter accessible from the job detail view (same as discovered jobs)
+- Optionally allow overriding title/company fields before saving
+- Backend: new `POST /api/jobs/manual` route that accepts `{ jd_text?, url?, title?, company? }`, scrapes URL if provided, then calls `tailor_resume()`
+
+---
+
+## 5. Settings Page
 Editable UI for Juan's job search configuration — no more editing JSON files manually.
 
 - **Default Resume editor** — edit work experience, skills, summary, etc.
