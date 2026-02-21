@@ -3,19 +3,25 @@
 ## Project Overview
 Job Hunter is an AI-powered job search agent for Juan Larrea, a Senior PM looking for remote PM roles ($180k+). It discovers jobs, tailors resumes, generates cover letters, and queues everything for one-click application via a dashboard.
 
-## Current State (as of project scaffolding)
+## Current State (as of February 2026)
 - ✅ Project structure created
 - ✅ Base resume parsed into structured JSON (`data/base_resume.json`)
 - ✅ Job preferences configured (`data/preferences.json`)
-- ✅ Database schema defined (`src/models/database.py`) — SQLite with jobs, applications, outreach tables
-- ✅ Resume tailoring agent with prompts (`src/agents/tailoring.py`)
-- ✅ Job discovery agent with scoring (`src/agents/discovery.py`)
-- ✅ Outreach agent with templates (`src/agents/outreach.py`)
-- ✅ FastAPI backend with routes (`src/api.py`)
-- ⬜ Frontend dashboard (Next.js)
-- ⬜ API keys integration
-- ⬜ DOCX resume generation
-- ⬜ End-to-end testing
+- ✅ Database schema + CRUD (`src/models/database.py`) — SQLite with jobs, applications, outreach tables
+- ✅ Resume tailoring agent (`src/agents/tailoring.py`) — Claude Sonnet, full JSON output
+- ✅ Job discovery agent (`src/agents/discovery.py`) — SerpAPI + Claude Haiku scoring, fully wired
+- ✅ Outreach agent (`src/agents/outreach.py`) — Claude Haiku, 3 message types
+- ✅ FastAPI backend (`src/api.py`) — all routes live, zero 501s
+- ✅ API keys configured (`.env` — Anthropic + SerpAPI)
+- ✅ DOCX generation (`src/utils/docx_builder.py`) — ATS-compliant, 6 resumes already generated
+- ✅ Frontend dashboard (`frontend/`) — Next.js 16, React 19, Tailwind 4, dark mode
+  - Job feed with filters + score coloring
+  - Job detail: full JD + resume/cover letter/ATS analysis tabs
+  - Tailoring trigger + .docx download
+  - Outreach drafting + message queue with copy-to-clipboard
+- ⬜ Application submission (Playwright — Priority 1)
+- ⬜ Stats/analytics view (UI scaffolded, needs backend metrics — Priority 2)
+- ⬜ `src/services/` and `src/config/` (currently empty — low priority refactor)
 
 ## Tech Stack
 - **Backend:** Python 3.12+, FastAPI, SQLite (aiosqlite)
@@ -27,36 +33,16 @@ Job Hunter is an AI-powered job search agent for Juan Larrea, a Senior PM lookin
 
 ## Development Priorities (in order)
 
-### Priority 1: Get Resume Tailoring Working End-to-End
-This is the highest-value feature. Steps:
-1. Set up `.env` with `ANTHROPIC_API_KEY`
-2. Wire up the Anthropic client in `src/api.py` 
-3. Test the `/api/applications/tailor` endpoint with a real job description
-4. Add DOCX generation (`src/utils/docx_builder.py`) — take the tailored JSON and produce a clean, ATS-friendly .docx file
-5. Test with a few real PM job descriptions from LinkedIn
-
-### Priority 2: Job Discovery Pipeline
-1. Set up `.env` with `SERPAPI_API_KEY`
-2. Wire up the SerpAPI client 
-3. Test the discovery agent with the configured search queries
-4. Verify scoring produces reasonable results
-5. Store results in SQLite and expose via `/api/jobs`
-
-### Priority 3: Next.js Dashboard
-Build a clean dashboard with these views:
-- **Job Feed:** Cards showing discovered jobs, sorted by score. Each card shows title, company, score, location, salary range. Click to expand full description.
-- **Application Review:** For a selected job, show the tailored resume (side-by-side with original), cover letter, ATS analysis. "Apply" button.
-- **Outreach Queue:** Draft messages waiting for approval. One-click copy to clipboard.
-- **Stats:** Jobs discovered, applications sent, response rate, etc.
-
-UI preferences: Clean, minimal, professional. Dark mode would be nice. Think Linear or Notion-inspired.
-
-### Priority 4: Application Submission (Playwright)
+### Priority 1: Application Submission (Playwright)
 - Start with Greenhouse and Lever form automation
 - Map common form fields (name, email, resume upload, cover letter, LinkedIn URL)
 - Always open a preview before submitting — never auto-submit without review
 
-### Priority 5: Outreach Polish
+### Priority 2: Stats / Analytics Dashboard
+- Backend: add a `/api/stats` route returning jobs discovered, applications created, response rate, etc.
+- Frontend: wire up the stats view (UI scaffolding already in place)
+
+### Priority 3: Outreach Polish
 - Add recruiter/HM lookup (manual for now, can parse from job listings)
 - Follow-up scheduling with reminders
 - Message templates for different scenarios
@@ -83,14 +69,22 @@ UI preferences: Clean, minimal, professional. Dark mode would be nice. Think Lin
 
 ## File Reference
 ```
-data/base_resume.json     — Juan's structured resume (source of truth)
-data/preferences.json     — Job search criteria and scoring weights
-src/agents/tailoring.py   — Resume + cover letter generation prompts
-src/agents/discovery.py   — Job search and scoring logic
-src/agents/outreach.py    — LinkedIn message drafting
-src/models/database.py    — SQLite schema and CRUD operations
-src/api.py                — FastAPI routes
-.env.example              — Required environment variables
+data/base_resume.json          — Juan's structured resume (source of truth)
+data/preferences.json          — Job search criteria and scoring weights
+data/jobs.db                   — SQLite database (jobs, applications, outreach)
+data/resumes/                  — Generated .docx tailored resumes
+src/api.py                     — FastAPI routes (all live)
+src/agents/tailoring.py        — Resume + cover letter generation (Claude Sonnet)
+src/agents/discovery.py        — Job search and scoring (SerpAPI + Claude Haiku)
+src/agents/outreach.py         — LinkedIn message drafting (Claude Haiku)
+src/models/database.py         — SQLite schema and CRUD operations
+src/utils/docx_builder.py      — ATS-compliant .docx generation (python-docx)
+frontend/app/page.tsx          — Job feed (filters, score cards, run discovery)
+frontend/app/jobs/[id]/page.tsx — Job detail (JD, resume/CL/ATS tabs, download)
+frontend/app/outreach/page.tsx — Outreach queue (copy-to-clipboard)
+frontend/components/Sidebar.tsx — Navigation
+frontend/lib/api.ts            — TypeScript API client
+.env.example                   — Required environment variables
 ```
 
 ## Environment Setup
@@ -104,8 +98,9 @@ uvicorn src.api:app --reload --port 8000
 ```
 
 ## Notes for Claude Code
-- When generating DOCX files, use clean formatting: no tables, no columns, no graphics. ATS systems choke on these.
-- For the frontend, use `npx create-next-app@latest frontend --typescript --tailwind --app` to initialize.
+- DOCX files: no tables, no columns, no graphics — ATS systems choke on these (already enforced in docx_builder.py).
 - The scoring weights in preferences.json can be tuned — start with the defaults and adjust based on results.
 - Keep API calls efficient — use prompt caching where possible (Juan is cost-conscious about AI API usage).
+- Discovery uses Claude Haiku for scoring (cost) and Sonnet for tailoring (quality). Don't swap these.
 - The database is SQLite for simplicity. If this scales, migration to Postgres would be straightforward since we're using async patterns already.
+- Frontend runs on port 3000, backend on port 8000. `frontend/.env.local` points to localhost:8000.
